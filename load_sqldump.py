@@ -13,10 +13,10 @@ import urllib
 import urllib2
 import traceback
 from cookielib import CookieJar, DefaultCookiePolicy
-
+from pprint import pprint
 
 __author__    = 'furyu (furyutei@gmail.com)'
-__version__   = '0.0.1b'
+__version__   = '0.0.1c'
 __copyright__ = 'Copyright (c) 2014 furyu'
 __license__   = 'New BSD License'
 
@@ -385,7 +385,7 @@ if __name__ == '__main__': #{
   optparser.add_option(
     '-s', '--server-number',
     type= 'int',
-    default = 1,
+    #default = 1,
     metavar = '<SERVER NUMBER>',
     help = u'MySQL server number(default: 1)',
     dest = 'server_number',
@@ -429,6 +429,8 @@ if __name__ == '__main__': #{
     if not server_number: server_number = _options.server_number
     if quiet is None: quiet = _options.quiet
   
+  if not server_number: server_number = 1
+
   if 1 < len(args):
     exit_code = 0
     url_phpmyadmin_top = args[0]
