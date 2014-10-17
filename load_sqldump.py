@@ -16,7 +16,7 @@ from cookielib import CookieJar, DefaultCookiePolicy
 from pprint import pprint
 
 __author__    = 'furyu (furyutei@gmail.com)'
-__version__   = '0.0.1c'
+__version__   = '0.0.1d'
 __copyright__ = 'Copyright (c) 2014 furyu'
 __license__   = 'New BSD License'
 
@@ -123,7 +123,9 @@ class LoadSqlDump(object): #{
       param_dict        : additional parameter's dictionary to export
     '''
     (src_codec, url_phpmyadmin_top) = self._str_decode(url_phpmyadmin_top)
-    self.url_phpmyadmin_top = re.sub(u'^(.*?)[^/]+$', ur'\1', url_phpmyadmin_top)
+    url_phpmyadmin_top = re.sub(u'/index\.php(\?.*)?$', ur'', url_phpmyadmin_top)
+    if not re.search(u'/$', url_phpmyadmin_top): url_phpmyadmin_top += '/'
+    self.url_phpmyadmin_top = url_phpmyadmin_top
     self.pma_username = pma_username
     self.pma_password = pma_password
     self.quiet = quiet
@@ -365,13 +367,14 @@ if __name__ == '__main__': #{
     help = u"user name for phpMyAdmin",
     dest = 'pma_password'
   )
-
+  
   optparser.add_option(
-    '-f', '--option-list-file',
-    action = 'store',
-    metavar = '<OPTION LIST FILE>',
-    help = u"option list file",
-    dest = 'option_file'
+    '-s', '--server-number',
+    type= 'int',
+    #default = 1,
+    metavar = '<SERVER NUMBER>',
+    help = u'MySQL server number(default: 1)',
+    dest = 'server_number',
   )
 
   optparser.add_option(
@@ -383,30 +386,29 @@ if __name__ == '__main__': #{
   )
 
   optparser.add_option(
-    '-s', '--server-number',
-    type= 'int',
-    #default = 1,
-    metavar = '<SERVER NUMBER>',
-    help = u'MySQL server number(default: 1)',
-    dest = 'server_number',
-  )
-  
-  optparser.add_option(
     '-q','--quiet'
   , action = 'store_true'
   , help = u"quiet mode"
   , dest = 'quiet'
   )
   
+  optparser.add_option(
+    '-f', '--option-list-file',
+    action = 'store',
+    metavar = '<OPTION LIST FILE>',
+    help = u"option list file",
+    dest = 'option_file'
+  )
+
   (options, args) = optparser.parse_args()
-  user = options.user
-  passwd = options.passwd
-  pma_username = options.pma_username
-  pma_password = options.pma_password
-  tgt_dir = options.tgt_dir
-  server_number = options.server_number
-  quiet = options.quiet
-  
+
+  # --- デフォルト
+  (user, passwd) = (None, None)
+  (pma_username, pma_password) = (None, None)
+  server_number = 1
+  tgt_dir = None
+  quiet = False
+
   if options.option_file:
     fp = open(options.option_file, 'rb')
     _argv = []
@@ -421,15 +423,24 @@ if __name__ == '__main__': #{
     fp.close()
     
     (_options, _args) = optparser.parse_args(_argv)
-    if not user: user = _options.user
-    if not passwd: passwd = _options.passwd
-    if not pma_username: pma_username = _options.pma_username
-    if not pma_password: pma_password = _options.pma_password
-    if not tgt_dir: tgt_dir = _options.tgt_dir
-    if not server_number: server_number = _options.server_number
-    if quiet is None: quiet = _options.quiet
-  
-  if not server_number: server_number = 1
+
+    # --- オプションファイルでの指定
+    if _options.user is not None: user = _options.user
+    if _options.passwd is not None: passwd = _options.passwd
+    if _options.pma_username is not None: pma_username = _options.pma_username
+    if _options.pma_password is not None: pma_password = _options.pma_password
+    if _options.server_number is not None: server_number = _options.server_number
+    if _options.tgt_dir is not None: tgt_dir = _options.tgt_dir
+    if _options.quiet is not None: quiet = _options.quiet
+
+  # --- ユーザ指定
+  if options.user is not None: user = options.user
+  if options.passwd is not None: passwd = options.passwd
+  if options.pma_username is not None: pma_username = options.pma_username
+  if options.pma_password is not None: pma_password = options.pma_password
+  if options.server_number is not None: server_number = options.server_number
+  if options.tgt_dir is not None: tgt_dir = options.tgt_dir
+  if options.quiet is not None: quiet = options.quiet
 
   if 1 < len(args):
     exit_code = 0
