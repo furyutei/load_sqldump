@@ -1,4 +1,4 @@
-#! /bin/env python
+#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 '''
@@ -16,9 +16,29 @@ from cookielib import CookieJar, DefaultCookiePolicy
 from pprint import pprint
 
 __author__    = 'furyu (furyutei@gmail.com)'
-__version__   = '0.0.1d'
+__version__   = '0.0.1e'
 __copyright__ = 'Copyright (c) 2014 furyu'
 __license__   = 'New BSD License'
+
+
+def prn(message, linefeed = True): #{
+  if isinstance(message, unicode):
+    message = message.encode('utf-8', 'replace')
+  if linefeed:
+    print message
+  else:
+    print message,
+#} // end of def prn()
+
+
+def prn_error(message, linefeed = True): #{
+  if isinstance(message, unicode):
+    message = message.encode('utf-8', 'replace')
+  if linefeed:
+    print >> sys.stderr, message
+  else:
+    print >> sys.stderr, message,
+#} // end of def prn_error()
 
 
 class LoadSqlDump(object): #{
@@ -160,16 +180,16 @@ class LoadSqlDump(object): #{
       try:
         os.makedirs(tgt_dir_enc)
       except:
-        print >> sys.stderr, traceback.format_exc()
-        print >> sys.stderr, u'Error: cannot create "%s"' % (tgt_dir)
+        prn_error( traceback.format_exc() )
+        prn_error( u'Error: cannot create "%s"' % (tgt_dir) )
         tgt_dir = '.'
         tgt_dir_enc = tgt_dir.encode(self.filename_codec, 'ignore')
     
     self.tgt_dir = tgt_dir
     self.tgt_dir_enc = tgt_dir_enc
     if not self.quiet:
-      print u'phpMyAdmin: %s' % (self.url_phpmyadmin_top)
-      print u'directory : %s' % (tgt_dir)
+      prn( u'phpMyAdmin: %s' % (self.url_phpmyadmin_top) )
+      prn( u'directory : %s' % (tgt_dir) )
     
   #} // end of def __init__()
   
@@ -180,7 +200,7 @@ class LoadSqlDump(object): #{
     (src_codec, db_name) = self._str_decode(db_name)
     filename = u'%s.sql' % (db_name)
     if not self.quiet:
-      print u'%s' % (filename)
+      prn( u'%s' % (filename) )
     
     flg_success = False
     while True:
@@ -194,14 +214,14 @@ class LoadSqlDump(object): #{
       )
       rsp = self._fetch(url, data=self._make_data(self.param_dict))
       if rsp.code < 200 or 300 <= rsp.code:
-        print >> sys.stderr, u'Error: %s => %d: %s' % (url, rsp.code, rsp.msg)
+        prn_error( u'Error: %s => %d: %s' % (url, rsp.code, rsp.msg) )
         break
       
       filename_enc = os.path.join(self.tgt_dir_enc, filename.encode(self.filename_codec, 'ignore'))
       fp = open(filename_enc, 'wb')
       #info = rsp.info()
       #for key in info.keys():
-      #  print '%s=%s' % (key, info.getheader(key))
+      #  prn( '%s=%s' % (key, info.getheader(key)) )
       
       #fp.write(rsp.read())
       size = 0
@@ -210,12 +230,12 @@ class LoadSqlDump(object): #{
         size += len(buf)
         if not self.quiet:
           if size < self.MB:
-            print '\r%6d KB' % (size//self.KB),
+            prn( '\r%6d KB' % (size//self.KB), False )
           else:
-            print '\r%6.2f MB' % (float(size)/self.MB),
+            prn( '\r%6.2f MB' % (float(size)/self.MB), False )
           sys.stdout.flush()
       fp.close()
-      if not self.quiet: print ''
+      if not self.quiet: prn( '' )
       
       flg_success = True
       break
@@ -227,13 +247,13 @@ class LoadSqlDump(object): #{
       (token, content) = (None, None)
       while True:
         if rsp.code < 200 or 300 <= rsp.code:
-          print >> sys.stderr, u'Error: %s => %d: %s' % (url, rsp.code, rsp.msg)
+          prn_error( u'Error: %s => %d: %s' % (url, rsp.code, rsp.msg) )
           break
         
         (src_codec, content) = self._str_decode(rsp.read())
         mrslt = self.RE_TOKEN.search(content)
         if not mrslt:
-          print >> sys.stderr, u'Error: token not found'
+          prn_error( u'Error: token not found' )
           break
         
         token = mrslt.group(1)
@@ -249,7 +269,7 @@ class LoadSqlDump(object): #{
       if not re.search(u'name="pma_username"', content): break
       (pma_username, pma_password) = (self.pma_username, self.pma_password)
       if not pma_username or not pma_password:
-        print >> sys.stderr, u'Error: both pma_username and pma_password required'
+        prn_error( u'Error: both pma_username and pma_password required' )
         token = None
         break
       
@@ -262,7 +282,7 @@ class LoadSqlDump(object): #{
       rsp = self._fetch(url, data=self._make_data(param_dict))
       (token, content) = _get_token_from_rsp(rsp)
       if re.search(u'name="pma_username"', content):
-        print >> sys.stderr, u'Error: incorrect pma_username or pma_password'
+        prn_error( u'Error: incorrect pma_username or pma_password' )
         token = None
         break
       break
